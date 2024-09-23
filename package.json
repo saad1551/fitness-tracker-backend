@@ -1,0 +1,17 @@
+{
+  "name": "fitness-tracker-backend",
+  "version": "1.0.0",
+  "description": "A fitness tracker web application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backend": "nodemon server.js"
+  },
+  "author": "Saad Ashraf",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.0",
+    "express-async-handler": "^1.2.0",
+    "nodemon": "^3.1.7"
+  }
+}
