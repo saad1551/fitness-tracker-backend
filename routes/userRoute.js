@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, verifyUser, completeRegistration, forgotPassword, resetPassword, loginUser, logout, loginStatus } = require('../controllers/userController');
+const { registerUser, verifyUser, completeRegistration, forgotPassword, resetPassword, loginUser, logout, loginStatus, updateProfile } = require('../controllers/userController');
 const protect = require('../middleware/authMiddleware');
 
 
@@ -13,5 +13,7 @@ router.get("/verifyEmail/:verificationToken", verifyUser);
 router.post("/completeregistration", protect, completeRegistration);
 router.post("/forgotpassword", forgotPassword);
 router.post("/resetpassword/:resetToken", resetPassword);
+router.post("/updateprofile", protect, updateProfile);
+
 
 module.exports = router;

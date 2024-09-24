@@ -321,6 +321,33 @@ const loginStatus = asyncHandler(async(req, res) => {
     }
 });
 
+// Update User 
+const updateProfile = asyncHandler(async(req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        const {name, email, age, phone, workout_time} = user
+        user.email = email;
+        user.name = req.body.name || name;
+        user.phone = req.body.phone || phone;
+        user.age = req.body.age || age;
+        user.workout_time = req.body.workout_time || workout_time;
+
+        const updatedUser = await user.save();
+        res.status(200).json({
+            _id: updatedUser._id, 
+            name: updatedUser.name, 
+            email: updatedUser.email, 
+            age: updatedUser.age, 
+            phone: updatedUser.phone, 
+            workout_time: updatedUser.workout_time
+        })
+    } else {
+        res.status(404)
+        throw new Error("User not found");
+    }
+});
+
 module.exports = {
     registerUser,
     verifyUser,
@@ -329,5 +356,6 @@ module.exports = {
     resetPassword,
     loginUser,
     logout,
-    loginStatus
+    loginStatus,
+    updateProfile
 };
