@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const errorHandler = require('./middleware/errorMiddleware');
 const userRouter = require('./routes/userRoute');
+const workoutRouter = require('./routes/workoutRoute');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 
 
 app.use("/api/users", userRouter);
+app.use("/api/workouts", workoutRouter);
 
 app.use(errorHandler);
 
