@@ -4,6 +4,8 @@ const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
+const ForgotPasswordToken = require('../models/forgotPasswordTokenModel');
+const bcrypt = require('bcrypt')
 
 const generateToken = (id) => {
     return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1d'});
@@ -163,8 +165,169 @@ const completeRegistration = asyncHandler(async(req,res) => {
     res.status(200).json({message: "Registration completed successfully"});
 });
 
+const forgotPassword = asyncHandler(async(req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        res.status(400);
+        throw new Error("Email is required to reset your password");
+    }
+
+    const user = await User.findOne({email});
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found, please register");
+    }
+
+    let token = crypto.randomBytes(32).toString("hex") + user._id;
+    
+    // Hash token before saving to db
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const forgotPasswordToken = await ForgotPasswordToken.create({
+        userId: user._id,
+        token: hashedToken,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 30 * (60 * 1000)
+    });
+
+    if (!forgotPasswordToken) {
+        res.status(500);
+        throw new Error("Something went wrong, please try again later");
+    }
+
+    // Construct Reset URL
+    const resetUrl = `${process.env.FRONTEND_URL}/resetpassword/${token}`;
+
+        // Reset email
+        const message = `
+        <h2>Hello ${user.name}</h2>
+        <p>Please the url below to reset your 
+        password</p>
+        <p>This reset link is valid for only 30 minutes</p>
+
+        <a href=${resetUrl} clicktracking=off>${resetUrl}</a>
+
+        <p>Regards...</p>
+        <p>${process.env.APP_NAME} Team</p>
+    `;
+    const subject = "Password Reset Request";
+    const send_to = user.email;
+    const sent_from = process.env.EMAIL_USER;
+
+    try {
+        await sendEmail(subject, message, send_to, sent_from);
+        res.status(200).json({success: true, message: "Reset email sent"});
+    } catch (error) {
+        res.status(500);
+        throw new Error("Email not sent, please try again");
+    }
+})
+
+const resetPassword = asyncHandler(async(req, res) => {
+    const {password} = req.body;
+    const {resetToken} = req.params;
+
+    // Hash token, then compare with the token in the database
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    // find token in db
+    const forgotPasswordToken = await ForgotPasswordToken.findOne({
+        token: hashedToken,
+        expiresAt: {$gt: Date.now()}
+    });
+
+    if (!forgotPasswordToken) {
+        res.status(404);
+        throw new Error("Invalid or expired token");
+    }
+
+    // Find user
+    const user = await User.findOne({_id: forgotPasswordToken.userId});
+    user.password = password;
+    await user.save();
+    res.status(200).json({message: "Password reset successful, please login"});
+});
+
+// Login User
+const loginUser = asyncHandler(async(req, res) => {
+    const {email, password} = req.body;
+
+    // Validate request
+    if (!email || !password) {
+        res.status(400);
+        throw new Error("Please add email and password");
+    }
+
+    // Check if user exists
+    const user = await User.findOne({email});
+
+    if (!user) {
+        res.status(400);
+        throw new Error("User not found. Please sign up.");
+    }
+
+    // User exists, now check if password is correct
+    const passwordIsCorrect = await bcrypt.compare(password, user.password);
+
+    const token = generateToken(user._id);
+    
+    // Send HTTP-only cookie 
+    res.cookie("token", token, {
+        path: "/",
+        httpOnly: true,
+        expires: new Date(Date.now() + 1000 * 86400), // 1 day
+        sameSite: "none",
+        secure: true
+    });
+
+    if (user && passwordIsCorrect) {
+        const {_id, name, email, workout_done, verified, age, phone, workout_time} = user
+        res.status(200).json({
+            _id, name, email, workout_done, verified, age, phone, workout_time
+        })
+    } else {
+        throw new Error("Invalid email and/or password");
+    }
+});
+
+// Logout User
+const logout = asyncHandler(async (req, res) => {
+    res.cookie("token", '', {
+        path: "/",
+        httpOnly: true,
+        expires: new Date(0), // 1 day
+        sameSite: "none",
+        secure: true
+    });
+    res.status(200).json({ message: "Successfully logged out" })
+});
+
+// Get login status
+const loginStatus = asyncHandler(async(req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.json(false);
+    }
+
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (verified) {
+        return res.json(true);
+    } else {
+        return res.json(false);
+    }
+});
+
 module.exports = {
     registerUser,
     verifyUser,
-    completeRegistration
+    completeRegistration,
+    forgotPassword,
+    resetPassword,
+    loginUser,
+    logout,
+    loginStatus
 };
