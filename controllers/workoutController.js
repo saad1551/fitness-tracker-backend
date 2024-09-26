@@ -1,6 +1,7 @@
 const protect = require('../middleware/errorMiddleware');
 const Workout = require('../models/workoutModel');
 const Exercise = require('../models/exerciseModel');
+const Set = require('../models/setModel');
 const asyncHandler = require('express-async-handler');
 
 const startWorkout = asyncHandler(async(req, res) => {
@@ -70,7 +71,59 @@ const startExercise = asyncHandler(async(req, res) => {
     });
 });
 
+const logSet = asyncHandler(async(req, res) => {
+    const { exercise_id, weight, reps, timeTaken } = req.body;
+
+    if (!exercise_id || !weight || !reps || !timeTaken) {
+        res.status(400);
+        throw new Error("Incomplete information");
+    }
+
+    const exercise = await Exercise.findById(exercise_id);
+
+    if (!exercise) {
+        res.status(404);
+        throw new Error("Exercise not found");
+    }
+
+    const workout = await Workout.findById(exercise.workoutId);
+
+    if (!workout) {
+        res.status(404);
+        throw new Error("Workout not found");
+    }
+
+    if (!workout.userId.equals(req.user._id)) {
+        res.status(401);
+        throw new Error("User not authorized");
+    }
+
+    const set = await Set.create({
+        exerciseId: exercise_id,
+        weight,
+        reps,
+        timeTaken
+    });
+
+    if (!set) {
+        res.status(400);
+        throw new Error("Could not log set");
+    }
+
+    res.status(201).json({
+        message: "Successfully logged set",
+        set: {
+            id: set._id,
+            exercise_id: exercise._id,
+            weight: set.weight,
+            reps: set.reps,
+            timeTaken: set.timeTaken
+        }
+    });
+});
+
 module.exports = {
     startWorkout,
-    startExercise
+    startExercise,
+    logSet
 };
