@@ -127,7 +127,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
 
     const workouts = await Workout.find({
         userId
-    });
+    }).sort({ createdAt: 1 });
 
     if (workouts.length <= 0) {
         res.status(404);
@@ -143,7 +143,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
         // Fetch the exercises related to this workout
         const exercises = await Exercise.find({
             workoutId: workoutId
-        });
+        }).sort({ createdAt: 1 });
 
         // Convert the workout document to a plain JavaScript object
         const workoutObj = workout.toObject();
@@ -170,7 +170,7 @@ const getExercises = asyncHandler(async(req, res) => {
 
     const exercises = await Exercise.find({
         workoutId
-    });
+    }).sort({ createdAt: 1 });
 
     if (exercises.length <= 0) {
         res.status(404);
@@ -184,7 +184,7 @@ const getExercises = asyncHandler(async(req, res) => {
 
         const sets = await Set.find({
             exerciseId
-        });
+        }).sort({ createdAt: 1 });
 
         const exerciseObj = exercise.toObject();
 
