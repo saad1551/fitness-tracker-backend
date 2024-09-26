@@ -158,12 +158,9 @@ const workoutHistory = asyncHandler(async(req, res) => {
     res.send(modifiedWorkouts);
 });
 
-
-
 module.exports = {
     startWorkout,
     startExercise,
     logSet,
-    workoutHistory,
-    getExercises
+    workoutHistory
 };
