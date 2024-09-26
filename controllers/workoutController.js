@@ -127,7 +127,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
 
     const workouts = await Workout.find({
         userId
-    });
+    }).sort({ createdAt: 1 });
 
     if (workouts.length <= 0) {
         res.status(404);
@@ -143,7 +143,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
         // Fetch the exercises related to this workout
         const exercises = await Exercise.find({
             workoutId: workoutId
-        });
+        }).sort({ createdAt: 1 });
 
         // Convert the workout document to a plain JavaScript object
         const workoutObj = workout.toObject();
@@ -158,43 +158,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
     res.send(modifiedWorkouts);
 });
 
-const getExercises = asyncHandler(async(req, res) => {
-    const { workoutId } = req.params;
 
-    const workout = await Workout.findById(workoutId);
-
-    if (!workout) {
-        res.status(404);
-        throw new Error("Workout not found");
-    }
-
-    const exercises = await Exercise.find({
-        workoutId
-    });
-
-    if (exercises.length <= 0) {
-        res.status(404);
-        throw new Error("No exercises found");
-    }
-
-    const modifiedExercises = [];
-
-    for (const exercise of exercises) {
-        const exerciseId = exercise._id;
-
-        const sets = await Set.find({
-            exerciseId
-        });
-
-        const exerciseObj = exercise.toObject();
-
-        exerciseObj.sets = sets;
-
-        modifiedExercises.push(exerciseObj);
-    }
-
-    res.send(modifiedExercises);
-});
 
 module.exports = {
     startWorkout,
