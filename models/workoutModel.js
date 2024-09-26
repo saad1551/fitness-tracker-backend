@@ -24,6 +24,10 @@ const workoutSchema = mongoose.Schema({
     ending_time: {
         type: String,
         trim: true
+    },
+    onGoing: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

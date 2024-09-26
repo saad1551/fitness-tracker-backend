@@ -44,7 +44,7 @@ const startExercise = asyncHandler(async(req, res) => {
         throw new Error("Workout not found");
     }
 
-    if (!workout._id.equals(req.user._id)) {
+    if (!workout.userId.equals(req.user._id)) {
         res.status(401);
         throw new Error("User not authorized");
     }
@@ -122,8 +122,45 @@ const logSet = asyncHandler(async(req, res) => {
     });
 });
 
+const workoutHistory = asyncHandler(async(req, res) => {
+    const userId = req.user._id;
+
+    const workouts = await Workout.find({
+        userId
+    });
+
+    if (workouts.length <= 0) {
+        res.status(404);
+        throw new Error("No workouts found");
+    }
+
+    // Prepare an array to store the modified workouts
+    const modifiedWorkouts = [];
+
+    for (let workout of workouts) {
+        const workoutId = workout._id;
+
+        // Fetch the exercises related to this workout
+        const exercises = await Exercise.find({
+            workoutId: workoutId
+        });
+
+        // Convert the workout document to a plain JavaScript object
+        const workoutObj = workout.toObject();
+
+        // Add the exercisesCompleted property to the plain object
+        workoutObj.exercisesCompleted = exercises.length;
+
+        // Push the modified workout into the array
+        modifiedWorkouts.push(workoutObj);
+    }
+
+    res.send(modifiedWorkouts);
+});
+
 module.exports = {
     startWorkout,
     startExercise,
-    logSet
+    logSet,
+    workoutHistory
 };
