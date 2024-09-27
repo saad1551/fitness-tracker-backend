@@ -28,6 +28,10 @@ const workoutSchema = mongoose.Schema({
     onGoing: {
         type: Boolean,
         default: true
+    },
+    exerciseLogged: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

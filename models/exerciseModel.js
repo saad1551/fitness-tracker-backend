@@ -12,6 +12,10 @@ const exerciseSchema = mongoose.Schema({
     },
     image: {
         type: String
+    },
+    setLogged: {
+        type: Boolean, 
+        default: false
     }
 }, {
     timestamps: true

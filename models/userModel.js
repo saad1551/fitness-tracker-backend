@@ -42,6 +42,17 @@ const userSchema = mongoose.Schema({
     verified: {
         type: Boolean,
         default: false
+    },
+    workouts_completed: {
+        type: Number,
+        default: 0
+    },
+    workout_streak: {
+        type: Number,
+        default: 0
+    },
+    last_completed_workout: {
+        type: Date
     }
 }, {
     timestamps: true

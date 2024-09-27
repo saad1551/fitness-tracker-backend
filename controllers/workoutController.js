@@ -2,6 +2,7 @@ const protect = require('../middleware/errorMiddleware');
 const Workout = require('../models/workoutModel');
 const Exercise = require('../models/exerciseModel');
 const Set = require('../models/setModel');
+const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
 
 const startWorkout = asyncHandler(async(req, res) => {
@@ -22,10 +23,67 @@ const startWorkout = asyncHandler(async(req, res) => {
     }
 
     res.status(201).json({
+        id: workout._id,
         userId: workout.userId,
         workout_name: workout.name,
         date: workout.date,
         beginning_time: workout.beginning_time
+    });
+});
+
+const stopWorkout = asyncHandler(async(req, res) => {
+    const { workout_id } = req.body;
+
+    const workout = await Workout.findById(workout_id);
+
+    if (!workout) {
+        res.status(404);
+        throw new Error("Workout not found");
+    }
+
+    if (!workout.userId.equals(req.user._id)) {
+        res.status(401);
+        throw new Error("User not authorized");
+    }
+
+    const exercises = await Exercise.find({
+        workoutId: workout_id,
+        setLogged: true
+    });
+
+    if (exercises.length <= 0) {
+        await Workout.deleteOne({_id: workout_id});
+        res.status(200).json({message: "Successfully stopped workout, 0 exercises completed"});
+    }
+
+    workout.ongGoing = false;
+
+    workout.endingTime = new Date().toLocaleTimeString();
+
+    await workout.save();
+
+    const user = await User.findById(workout.userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    user.workouts_completed += 1;
+
+    user.workout_done = true
+
+    const d = new Date();
+
+    if (user.last_completed_workout.getFullYear() === d.getFullYear && user.last_completed_workout.getMonth() === d.getMonth() && user.last_completed_workout.getDate() + 1 === d.getDate()) {
+        user.workout_streak += 1;
+    }
+
+    await User.save();
+
+    res.status(200).json({
+        message: "Successfully stopped workout",
+        workout
     });
 });
 
@@ -110,6 +168,14 @@ const logSet = asyncHandler(async(req, res) => {
         throw new Error("Could not log set");
     }
 
+    exercise.setLogged = true;
+
+    workout.exerciseLogged = true;
+
+    await exercise.save();
+
+    await workout.save();
+
     res.status(201).json({
         message: "Successfully logged set",
         set: {
@@ -126,7 +192,8 @@ const workoutHistory = asyncHandler(async(req, res) => {
     const userId = req.user._id;
 
     const workouts = await Workout.find({
-        userId
+        userId,
+        exercisesCompleted: {$gte: 1}
     }).sort({ createdAt: 1 });
 
     if (workouts.length <= 0) {
@@ -196,10 +263,13 @@ const getExercises = asyncHandler(async(req, res) => {
     res.send(modifiedExercises);
 });
 
+
+
 module.exports = {
     startWorkout,
     startExercise,
     logSet,
     workoutHistory,
-    getExercises
+    getExercises,
+    stopWorkout
 };
