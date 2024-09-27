@@ -263,6 +263,10 @@ const getExercises = asyncHandler(async(req, res) => {
     res.send(modifiedExercises);
 });
 
+const progressCharts = asyncHandler(async(req, res) => {
+    res.send("Progress charts");
+})
+
 
 
 module.exports = {
@@ -271,5 +275,6 @@ module.exports = {
     logSet,
     workoutHistory,
     getExercises,
-    stopWorkout
+    stopWorkout,
+    progressCharts
 };
