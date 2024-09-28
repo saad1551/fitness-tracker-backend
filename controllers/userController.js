@@ -420,7 +420,8 @@ const getUserProfile = asyncHandler(async(req, res) => {
     const token = req.cookies.token;
 
     if (!token) {
-        return res.json(false);
+        res.status(401);
+        throw new Error("Not logged in");
     }
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
@@ -431,6 +432,9 @@ const getUserProfile = asyncHandler(async(req, res) => {
 
     if (user) {
         res.status(200).json(user);
+    } else {
+        res.status(401);
+        throw new Error("User not found");
     }
 })
 
