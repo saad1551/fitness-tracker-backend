@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv').config();
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(cors());
 
 app.get("/", (req, res) => {
     res.send("Home Page");

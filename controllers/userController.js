@@ -11,7 +11,7 @@ const generateToken = (id) => {
     return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1d'});
 };
 
-const registerUser = async(req, res) => {
+const registerUser = asyncHandler(async(req, res) => {
     const {name, email, password} = req.body;
 
     // Validation
@@ -91,7 +91,7 @@ const registerUser = async(req, res) => {
         res.status(400)
         throw new Error("Something went wrong, please try again");
     }
-};
+});
 
 const verifyUser = asyncHandler(async(req, res) => {
     const token = req.params.verificationToken;
@@ -132,7 +132,7 @@ const verifyUser = asyncHandler(async(req, res) => {
         secure: true
     });
 
-    res.status(200).json({message: "Successfully verified email" });
+    res.status(200).json({message: "Successfully verified email, please complete your registration" });
 });
 
 const completeRegistration = asyncHandler(async(req,res) => {
