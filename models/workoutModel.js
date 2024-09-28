@@ -12,7 +12,7 @@ const workoutSchema = mongoose.Schema({
         required: [true, "Please add a name"]
     },
     date: {
-        type: String,
+        type: Date,
         trim: true,
         required: [true, "Please add a date"]
     },

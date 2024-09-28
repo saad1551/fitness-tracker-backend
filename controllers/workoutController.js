@@ -13,7 +13,7 @@ const startWorkout = asyncHandler(async(req, res) => {
     const workout = await Workout.create({
         userId,
         name: workout_name,
-        date: new Date().toLocaleDateString(),
+        date: new Date(),
         beginning_time: new Date().toLocaleTimeString()
     });
 
@@ -56,9 +56,14 @@ const stopWorkout = asyncHandler(async(req, res) => {
         res.status(200).json({message: "Successfully stopped workout, 0 exercises completed"});
     }
 
-    workout.ongGoing = false;
+    if (workout.onGoing === false) {
+        res.status(400);
+        throw new Error("Workout has already been stopped");
+    }
 
-    workout.endingTime = new Date().toLocaleTimeString();
+    workout.onGoing = false;
+
+    workout.ending_time = new Date().toLocaleTimeString();
 
     await workout.save();
 
@@ -75,11 +80,13 @@ const stopWorkout = asyncHandler(async(req, res) => {
 
     const d = new Date();
 
-    if (user.last_completed_workout.getFullYear() === d.getFullYear && user.last_completed_workout.getMonth() === d.getMonth() && user.last_completed_workout.getDate() + 1 === d.getDate()) {
+    if (user.last_completed_workout && user.last_completed_workout.getFullYear() === d.getFullYear && user.last_completed_workout.getMonth() === d.getMonth() && user.last_completed_workout.getDate() + 1 === d.getDate()) {
         user.workout_streak += 1;
+    } else {
+        user.workout_streak = 1;
     }
 
-    await User.save();
+    await user.save();
 
     res.status(200).json({
         message: "Successfully stopped workout",
@@ -264,8 +271,67 @@ const getExercises = asyncHandler(async(req, res) => {
 });
 
 const progressCharts = asyncHandler(async(req, res) => {
-    res.send("Progress charts");
-})
+    const streak = req.user.workout_streak;
+
+    const workouts_completed = req.user.workouts_completed;
+
+    const now = new Date();
+
+    // Start of the week (assuming Monday is the first day of the week)
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1)); // Monday of this week
+    
+    // End of the week (Sunday)
+    const endOfWeek = new Date(now.setDate(startOfWeek.getDate() + 6)); // Sunday of this week
+
+    // Ensure time is set to the start of the day for `startOfWeek`
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Ensure time is set to the end of the day for `endOfWeek`
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const workoutsThisWeek = await Workout.find({
+        date: {
+            $gte: startOfWeek,
+            $lte: endOfWeek
+        },
+        onGoing: false // Ensure the workout is completed
+    });
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);  // First day of the month
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the month
+
+    const workoutsThisMonth = await Workout.find({
+        date: {
+            $gte: startOfMonth,
+            $lte: endOfMonth
+        },
+        onGoing: false  // Ensure the workout is completed
+    });
+
+    // Start of the year: January 1st of the current year
+    const startOfYear = new Date(now.getFullYear(), 0, 1); // January 1st
+    startOfYear.setHours(0, 0, 0, 0); // Set time to start of the day
+ 
+    // End of the year: December 31st of the current year
+    const endOfYear = new Date(now.getFullYear(), 11, 31); // December 31st
+    endOfYear.setHours(23, 59, 59, 999); // Set time to end of the day
+
+    const workoutsThisYear = await Workout.find({
+        date: {
+            $gte: startOfYear,
+            $lte: endOfYear
+        },
+        onGoing: false // Ensure the workout is completed
+    });
+
+    res.status(200).json({
+        streak,
+        workouts_completed,
+        workouts_completed_week: workoutsThisWeek.length,
+        workouts_completed_month: workoutsThisMonth.length,
+        workouts_completed_year: workoutsThisYear.length,
+    });
+});
 
 
 
