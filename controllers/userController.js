@@ -26,9 +26,55 @@ const registerUser = asyncHandler(async(req, res) => {
     }
 
     // Check if user email already exists
-    const userExists = await User.findOne({email});
+    const existingUser = await User.findOne({email});
 
-    if (userExists) {
+    if (existingUser) {
+        if (!existingUser.verified) {
+            const {_id, name, email, verified} = existingUser
+
+            await Token.deleteMany({userId: existingUser._id});
+
+            const token = crypto.randomBytes(32).toString("hex") + existingUser._id;        
+            // Hash token before saving to db
+            const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+            const emailVerificationToken = await Token.create({
+                userId: existingUser._id,
+                token: hashedToken,
+                createdAt: Date.now(),
+                expiresAt: Date.now() + 30 * (60 * 1000)
+            });
+
+            if (!emailVerificationToken) {
+                res.status(400);
+                throw new Error("Something went wrong, please try again");
+            }
+
+            // Construct Reset URL
+            const verificationUrl = `${process.env.FRONTEND_URL}/verifyEmail/${token}`;
+
+            // Verification email
+            const message = `
+            <h2>Hello ${existingUser.name}</h2>
+            <p>Please use the link below to verify your 
+            email and activate your account</p>
+            <p>This link is valid for only 30 minutes</p>
+
+            <a href=${verificationUrl} clicktracking=off>${verificationUrl}</a>
+
+            <p>Regards...</p>
+            <p>${process.env.APP_NAME} team</p>
+            `;
+            const subject = "Email Verification";
+            const send_to = existingUser.email;
+            const sent_from = process.env.EMAIL_USER;
+
+            await sendEmail(subject, message, send_to, sent_from);
+
+            return res.status(200).json({
+                _id, name, email, verified
+            })
+        }
         res.status(400);
         throw new Error("Email has already been used");
     }
@@ -45,7 +91,7 @@ const registerUser = asyncHandler(async(req, res) => {
     if (user) {
         const {_id, name, email, verified} = user
 
-        await Token.deleteOne({userId: _id});
+        await Token.deleteMany({userId: _id});
 
         const token = crypto.randomBytes(32).toString("hex") + user._id;        
         // Hash token before saving to db
@@ -101,12 +147,12 @@ const verifyUser = asyncHandler(async(req, res) => {
 
     const emailVerificationToken = await Token.findOne({
         token: hashedToken,
-        expiresAt: {$gt: Date.now()}
+        expiresAt: {$gt: Date.now()},
     });
 
     if (!emailVerificationToken) {
         res.status(404);
-        throw new Error("Invalid or Expired token");
+        throw new Error("Verification token either invalid or expired, please try again with a different token or register again");
     }
 
     const user = await User.findOne({ _id: emailVerificationToken.userId });
@@ -130,6 +176,10 @@ const verifyUser = asyncHandler(async(req, res) => {
         expires: new Date(Date.now() + 1000 * 86400), // 1 day
         sameSite: "none",
         secure: true
+    });
+
+    await Token.delete({
+        userId: user._id
     });
 
     res.status(200).json({message: "Successfully verified email, please complete your registration" });
@@ -285,9 +335,13 @@ const loginUser = asyncHandler(async(req, res) => {
     if (user && passwordIsCorrect) {
         const {_id, name, email, workout_done, verified, age, phone, workout_time} = user
         res.status(200).json({
-            _id, name, email, workout_done, verified, age, phone, workout_time
+            message: "Successfully logged in", 
+            user: {
+                _id, name, email, workout_done, verified, age, phone, workout_time
+            }
         })
     } else {
+        res.status(400);
         throw new Error("Invalid email and/or password");
     }
 });
@@ -314,10 +368,24 @@ const loginStatus = asyncHandler(async(req, res) => {
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
 
+    const userId = verified.id;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
     if (verified) {
-        return res.json(true);
+        return res.json({
+            loggedIn: true,
+            user
+        });
     } else {
-        return res.json(false);
+        return res.json({
+            loggedIn: false
+        });
     }
 });
 
