@@ -178,7 +178,7 @@ const verifyUser = asyncHandler(async(req, res) => {
         secure: true
     });
 
-    await Token.delete({
+    await Token.deleteMany({
         userId: user._id
     });
 
