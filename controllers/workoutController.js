@@ -5,6 +5,20 @@ const Set = require('../models/setModel');
 const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
 
+function getTimeDifferenceInHours(startTime, endTime) {
+    // Parse time strings into Date objects
+    const start = new Date(`1970-01-01T${startTime}:00Z`);
+    const end = new Date(`1970-01-01T${endTime}:00Z`);
+    
+    // Calculate the difference in milliseconds
+    const diffInMs = end - start;
+
+    // Convert milliseconds to hours (1 hour = 3600000 milliseconds)
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+
+    return diffInHours;
+}
+
 const startWorkout = asyncHandler(async(req, res) => {
     const { workout_name } = req.body;
 
@@ -273,7 +287,7 @@ const getExercises = asyncHandler(async(req, res) => {
 const progressCharts = asyncHandler(async(req, res) => {
     const streak = req.user.workout_streak;
 
-    const workouts_completed = req.user.workouts_completed;
+    const workoutsCompleted = req.user.workouts_completed;
 
     const now = new Date();
 
@@ -324,12 +338,53 @@ const progressCharts = asyncHandler(async(req, res) => {
         onGoing: false // Ensure the workout is completed
     });
 
+    let timeThisWeek = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisWeek += hoursDifference;
+    }
+
+    let timeThisMonth = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisMonth += hoursDifference;
+    }
+
+    let timeThisYear = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisYear += hoursDifference;
+    }
+
     res.status(200).json({
         streak,
-        workouts_completed,
-        workouts_completed_week: workoutsThisWeek.length,
-        workouts_completed_month: workoutsThisMonth.length,
-        workouts_completed_year: workoutsThisYear.length,
+        thisWeek: {
+            workoutsCompleted: workoutsThisWeek.length,
+            timeSpent: timeThisWeek
+        },
+        thisMonth: {
+            workoutsCompleted: workoutsThisMonth.length,
+            timeSpent: timeThisMonth
+        },
+        thisYear: {
+            workoutsCompleted: workoutsThisYear.length,
+            timeSpent: timeThisYear
+        }
     });
 });
 
