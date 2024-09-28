@@ -416,6 +416,24 @@ const updateProfile = asyncHandler(async(req, res) => {
     }
 });
 
+const getUserProfile = asyncHandler(async(req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.json(false);
+    }
+
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+
+    const userId = verified.id;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (user) {
+        res.status(200).json(user);
+    }
+})
+
 module.exports = {
     registerUser,
     verifyUser,
@@ -425,5 +443,6 @@ module.exports = {
     loginUser,
     logout,
     loginStatus,
-    updateProfile
+    updateProfile,
+    getUserProfile
 };
