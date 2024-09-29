@@ -246,6 +246,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
     res.send(modifiedWorkouts);
 });
 
+
 const getExercises = asyncHandler(async(req, res) => {
     const { workoutId } = req.params;
 
@@ -284,10 +285,116 @@ const getExercises = asyncHandler(async(req, res) => {
     res.send(modifiedExercises);
 });
 
+const progressCharts = asyncHandler(async(req, res) => {
+    const streak = req.user.workout_streak;
+
+    const workoutsCompleted = req.user.workouts_completed;
+
+    const now = new Date();
+
+    // Start of the week (assuming Monday is the first day of the week)
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1)); // Monday of this week
+    
+    // End of the week (Sunday)
+    const endOfWeek = new Date(now.setDate(startOfWeek.getDate() + 6)); // Sunday of this week
+
+    // Ensure time is set to the start of the day for `startOfWeek`
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Ensure time is set to the end of the day for `endOfWeek`
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const workoutsThisWeek = await Workout.find({
+        date: {
+            $gte: startOfWeek,
+            $lte: endOfWeek
+        },
+        onGoing: false // Ensure the workout is completed
+    });
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);  // First day of the month
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the month
+
+    const workoutsThisMonth = await Workout.find({
+        date: {
+            $gte: startOfMonth,
+            $lte: endOfMonth
+        },
+        onGoing: false  // Ensure the workout is completed
+    });
+
+    // Start of the year: January 1st of the current year
+    const startOfYear = new Date(now.getFullYear(), 0, 1); // January 1st
+    startOfYear.setHours(0, 0, 0, 0); // Set time to start of the day
+ 
+    // End of the year: December 31st of the current year
+    const endOfYear = new Date(now.getFullYear(), 11, 31); // December 31st
+    endOfYear.setHours(23, 59, 59, 999); // Set time to end of the day
+
+    const workoutsThisYear = await Workout.find({
+        date: {
+            $gte: startOfYear,
+            $lte: endOfYear
+        },
+        onGoing: false // Ensure the workout is completed
+    });
+
+    let timeThisWeek = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisWeek += hoursDifference;
+    }
+
+    let timeThisMonth = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisMonth += hoursDifference;
+    }
+
+    let timeThisYear = 0;
+
+    for (const workout of workoutsThisWeek) {
+        const startTime = workout.beginning_time;
+        const endTime = workout.ending_time;
+
+        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
+
+        timeThisYear += hoursDifference;
+    }
+
+    res.status(200).json({
+        streak,
+        thisWeek: {
+            workoutsCompleted: workoutsThisWeek.length,
+            timeSpent: timeThisWeek
+        },
+        thisMonth: {
+            workoutsCompleted: workoutsThisMonth.length,
+            timeSpent: timeThisMonth
+        },
+        thisYear: {
+            workoutsCompleted: workoutsThisYear.length,
+            timeSpent: timeThisYear
+        }
+    });
+});
+
 module.exports = {
     startWorkout,
     startExercise,
+    stopWorkout,
     logSet,
     workoutHistory,
+    progressCharts,
     getExercises
 };
