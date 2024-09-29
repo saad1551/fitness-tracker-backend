@@ -17,12 +17,23 @@ function getTimeDifferenceInHours(startTime, endTime) {
     const diffInHours = diffInMs / (1000 * 60 * 60);
 
     return diffInHours;
-}
+};
 
 const startWorkout = asyncHandler(async(req, res) => {
     const { workout_name } = req.body;
 
     const userId = req.user._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    user.workoutOngoing = true;
+
+    await user.save();
 
     const workout = await Workout.create({
         userId,
@@ -35,6 +46,8 @@ const startWorkout = asyncHandler(async(req, res) => {
         res.status(400);
         throw new Error("Could not start workout, please try again");
     }
+
+
 
     res.status(201).json({
         id: workout._id,
@@ -90,7 +103,9 @@ const stopWorkout = asyncHandler(async(req, res) => {
 
     user.workouts_completed += 1;
 
-    user.workout_done = true
+    user.workout_done = true;
+
+    user.workoutOngoing = false;
 
     const d = new Date();
 

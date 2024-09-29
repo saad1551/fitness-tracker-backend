@@ -39,6 +39,10 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    workoutOngoing: {
+        type: Boolean, 
+        default: true
+    },
     verified: {
         type: Boolean,
         default: false
