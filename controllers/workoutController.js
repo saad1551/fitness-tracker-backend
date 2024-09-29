@@ -404,6 +404,21 @@ const progressCharts = asyncHandler(async(req, res) => {
     });
 });
 
+const getWorkoutStatus = asyncHandler(async(req, res) => {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    res.status(200).json({
+        workoutOngoing: user.workoutOngoing
+    });
+})
+
 module.exports = {
     startWorkout,
     startExercise,
@@ -411,5 +426,6 @@ module.exports = {
     logSet,
     workoutHistory,
     progressCharts,
-    getExercises
+    getExercises,
+    getWorkoutStatus
 };
