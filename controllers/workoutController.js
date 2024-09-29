@@ -78,9 +78,18 @@ const stopWorkout = asyncHandler(async(req, res) => {
         setLogged: true
     });
 
+    const user = await User.findById(workout.userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
     if (exercises.length <= 0) {
         await Workout.deleteOne({_id: workout_id});
+        user.workoutOngoing = false;
         res.status(200).json({message: "Successfully stopped workout, 0 exercises completed"});
+        return;
     }
 
     if (workout.onGoing === false) {
@@ -94,12 +103,7 @@ const stopWorkout = asyncHandler(async(req, res) => {
 
     await workout.save();
 
-    const user = await User.findById(workout.userId);
 
-    if (!user) {
-        res.status(404);
-        throw new Error("User not found");
-    }
 
     user.workouts_completed += 1;
 
@@ -297,7 +301,10 @@ const getExercises = asyncHandler(async(req, res) => {
         modifiedExercises.push(exerciseObj);
     }
 
-    res.send(modifiedExercises);
+    res.status(200).json({
+        workout: workout,
+        exercises: modifiedExercises
+    });
 });
 
 const progressCharts = asyncHandler(async(req, res) => {

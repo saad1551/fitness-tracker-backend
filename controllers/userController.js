@@ -153,6 +153,7 @@ const verifyUser = asyncHandler(async(req, res) => {
     if (!emailVerificationToken) {
         res.status(404);
         throw new Error("Verification token either invalid or expired, please try again with a different token or register again");
+        return;
     }
 
     const user = await User.findOne({ _id: emailVerificationToken.userId });
@@ -178,9 +179,9 @@ const verifyUser = asyncHandler(async(req, res) => {
         secure: true
     });
 
-    await Token.deleteMany({
-        userId: user._id
-    });
+    // await Token.deleteMany({
+    //     userId: user._id
+    // });
 
     res.status(200).json({message: "Successfully verified email, please complete your registration" });
 });
