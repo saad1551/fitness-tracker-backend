@@ -30,12 +30,16 @@ cron.schedule('*/30 * * * *', async () => {
         // Send reminders
         for (const user of usersToRemind) {
             // Send email reminder
-            await sendReminderEmail(user);
+            const subject = "Workout Reminder";
+            const message = `Hi ${user.name}, it's time for your workout! Log in to the app now and start your workout`
+            const send_to = user.email;
+            const sent_from = process.env.EMAIL_USER;
+            await sendEmail(subject, message, send_to, sent_from);
             
             // Optionally send in-app notification
             await Notification.create({
                 userId: user._id,
-                message: `Hi ${user.name}, it's time for your workout!`
+                message: message
             });
         }
 
