@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors({
-    origin: 'https://fitness-tracker-frontend-indol.vercel.app',  // Allow requests from this origin
+    origin: 'https://fitness-tracker-frontend-azure.vercel.app',  // Allow requests from this origin
     credentials: true                 // Enable sending cookies and credentials
   }));
 
