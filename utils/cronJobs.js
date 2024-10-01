@@ -1,16 +1,46 @@
 const cron = require('node-cron');
-const User = require('./models/User'); // Adjust the path to your User model
+const moment = require('moment'); // For easier date handling
+const User = require('../models/userModel'); // Adjust path as necessary
+const sendReminderEmail = require('../utils/sendEmail'); // Import the mailer
+const Notification = require('../models/notificationModel'); // Adjust path as necessary
 
-// Run this task at midnight (00:00) every day
+// Job to reset workout_done property at the start of each day
 cron.schedule('0 0 * * *', async () => {
-  try {
-    console.log("Resetting workout_done for all users...");
+    try {
+        // Set workout_done to false for all users at midnight
+        await User.updateMany({}, { workout_done: false });
+        console.log('Workout done status reset for all users.');
+    } catch (error) {
+        console.error("Error resetting workout_done status:", error);
+    }
+});
 
-    // Update all users' workout_done property to false
-    await User.updateMany({}, { workout_done: false });
+// Job to send workout reminders every 30 minutes
+cron.schedule('*/30 * * * *', async () => {
+    try {
+        const currentTime = moment(); // Get current time
 
-    console.log("Workout_done reset successfully!");
-  } catch (error) {
-    console.error("Error resetting workout_done:", error);
-  }
+        // Find users who need reminders
+        const usersToRemind = await User.find({
+            workout_done: false,
+            workoutOngoing: false,
+            workout_time: { $lt: currentTime }, // Workout time has passed
+        });
+
+        // Send reminders
+        for (const user of usersToRemind) {
+            // Send email reminder
+            await sendReminderEmail(user);
+            
+            // Optionally send in-app notification
+            await Notification.create({
+                userId: user._id,
+                message: `Hi ${user.name}, it's time for your workout! Please log in to the app to track your progress.`
+            });
+        }
+
+        console.log(`Reminders sent to ${usersToRemind.length} users.`);
+    } catch (error) {
+        console.error("Error sending reminders:", error);
+    }
 });
