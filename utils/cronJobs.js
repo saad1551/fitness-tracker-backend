@@ -35,7 +35,7 @@ cron.schedule('*/30 * * * *', async () => {
             // Optionally send in-app notification
             await Notification.create({
                 userId: user._id,
-                message: `Hi ${user.name}, it's time for your workout! Please log in to the app to track your progress.`
+                message: `Hi ${user.name}, it's time for your workout!`
             });
         }
 
