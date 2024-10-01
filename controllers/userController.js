@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
 const ForgotPasswordToken = require('../models/forgotPasswordTokenModel');
+const Notification = require('../models/notificationModel'); 
 const bcrypt = require('bcrypt')
 
 const generateToken = (id) => {
@@ -437,7 +438,30 @@ const getUserProfile = asyncHandler(async(req, res) => {
         res.status(401);
         throw new Error("User not found");
     }
-})
+});
+
+// Controller to get and delete notification for a user
+const getNotifications = async (req, res) => {
+    try {
+        const userId = req.user._id; // Get user ID from the request
+
+        // Find a notification for the user
+        const notification = await Notification.findOne({ userId });
+
+        if (!notification) {
+            return res.status(404).json({ message: 'No notification found for this user.' });
+        }
+
+        // Delete the notification from the database
+        await Notification.deleteOne({ _id: notification._id });
+
+        // Return the notification
+        res.status(200).json({ notification });
+    } catch (error) {
+        console.error("Error fetching notification:", error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+};
 
 module.exports = {
     registerUser,
@@ -449,5 +473,6 @@ module.exports = {
     logout,
     loginStatus,
     updateProfile,
-    getUserProfile
+    getUserProfile,
+    getNotifications
 };
