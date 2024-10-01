@@ -24,23 +24,28 @@ cron.schedule('*/30 * * * *', async () => {
         const usersToRemind = await User.find({
             workout_done: false,
             workoutOngoing: false,
-            workout_time: { $lt: currentTime }, // Workout time has passed
         });
 
         // Send reminders
         for (const user of usersToRemind) {
-            // Send email reminder
-            const subject = "Workout Reminder";
-            const message = `Hi ${user.name}, it's time for your workout! Log in to the app now and start your workout`
-            const send_to = user.email;
-            const sent_from = process.env.EMAIL_USER;
-            await sendEmail(subject, message, send_to, sent_from);
-            
-            // Optionally send in-app notification
-            await Notification.create({
-                userId: user._id,
-                message: message
-            });
+            // Parse workout_time string (e.g., "17:00") into a moment object
+            const workoutTime = moment(user.workout_time, 'HH:mm'); // Convert workout_time string to moment object
+
+            // If current time is past the workout time, send reminders
+            if (currentTime.isAfter(workoutTime)) {
+                // Send email reminder
+                const subject = "Workout Reminder";
+                const message = `Hi ${user.name}, it's time for your workout! Log in to the app now and start your workout.`;
+                const send_to = user.email;
+                const sent_from = process.env.EMAIL_USER;
+                await sendEmail(subject, message, send_to, sent_from);
+
+                // Send in-app notification
+                await Notification.create({
+                    userId: user._id,
+                    message: message
+                });
+            }
         }
 
         console.log(`Reminders sent to ${usersToRemind.length} users.`);
@@ -48,4 +53,3 @@ cron.schedule('*/30 * * * *', async () => {
         console.error("Error sending reminders:", error);
     }
 });
-
