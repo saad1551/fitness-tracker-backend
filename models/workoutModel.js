@@ -32,6 +32,9 @@ const workoutSchema = mongoose.Schema({
     exerciseLogged: {
         type: Boolean,
         default: false
+    },
+    duration: {
+        type: Date
     }
 }, {
     timestamps: true

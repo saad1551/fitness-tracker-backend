@@ -101,6 +101,8 @@ const stopWorkout = asyncHandler(async(req, res) => {
 
     workout.ending_time = new Date().toLocaleTimeString();
 
+    workout.duration = new Date() - workout.date;
+
     await workout.save();
 
 
@@ -307,22 +309,18 @@ const getExercises = asyncHandler(async(req, res) => {
     });
 });
 
-const progressCharts = asyncHandler(async(req, res) => {
+const progressCharts = asyncHandler(async (req, res) => {
     const streak = req.user.workout_streak;
-
     const workoutsCompleted = req.user.workouts_completed;
 
     const now = new Date();
 
     // Start of the week (assuming Monday is the first day of the week)
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1)); // Monday of this week
-    
-    // End of the week (Sunday)
     const endOfWeek = new Date(now.setDate(startOfWeek.getDate() + 6)); // Sunday of this week
 
     // Ensure time is set to the start of the day for `startOfWeek`
     startOfWeek.setHours(0, 0, 0, 0);
-    
     // Ensure time is set to the end of the day for `endOfWeek`
     endOfWeek.setHours(23, 59, 59, 999);
 
@@ -345,11 +343,9 @@ const progressCharts = asyncHandler(async(req, res) => {
         onGoing: false  // Ensure the workout is completed
     });
 
-    // Start of the year: January 1st of the current year
     const startOfYear = new Date(now.getFullYear(), 0, 1); // January 1st
     startOfYear.setHours(0, 0, 0, 0); // Set time to start of the day
- 
-    // End of the year: December 31st of the current year
+
     const endOfYear = new Date(now.getFullYear(), 11, 31); // December 31st
     endOfYear.setHours(23, 59, 59, 999); // Set time to end of the day
 
@@ -362,43 +358,41 @@ const progressCharts = asyncHandler(async(req, res) => {
     });
 
     let timeThisWeek = 0;
-
-    for (const workout of workoutsThisWeek) {
-        const startTime = workout.beginning_time;
-        const endTime = workout.ending_time;
-
-        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
-
-        timeThisWeek += hoursDifference;
-    }
-
     let timeThisMonth = 0;
-
-    for (const workout of workoutsThisWeek) {
-        const startTime = workout.beginning_time;
-        const endTime = workout.ending_time;
-
-        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
-
-        timeThisMonth += hoursDifference;
-    }
-
     let timeThisYear = 0;
+    
+    const totalWorkoutsThisWeek = workoutsThisWeek.length; // To calculate average time
+    const totalDurationThisWeek = []; // Store durations to calculate average
 
+    // Calculate time spent for this week
     for (const workout of workoutsThisWeek) {
-        const startTime = workout.beginning_time;
-        const endTime = workout.ending_time;
-
-        const hoursDifference = getTimeDifferenceInHours(startTime, endTime);
-
-        timeThisYear += hoursDifference;
+        const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
+        timeThisWeek += durationInHours;
+        totalDurationThisWeek.push(durationInHours);
     }
+    
+    // Calculate time spent for this month
+    for (const workout of workoutsThisMonth) {
+        const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
+        timeThisMonth += durationInHours;
+    }
+    
+    // Calculate time spent for this year
+    for (const workout of workoutsThisYear) {
+        const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
+        timeThisYear += durationInHours;
+    }
+
+    // Calculate average time spent per workout for this week
+    const averageTimeThisWeek = totalWorkoutsThisWeek ? 
+        (totalDurationThisWeek.reduce((a, b) => a + b, 0) / totalWorkoutsThisWeek) : 0;
 
     res.status(200).json({
         streak,
         thisWeek: {
-            workoutsCompleted: workoutsThisWeek.length,
-            timeSpent: timeThisWeek
+            workoutsCompleted: totalWorkoutsThisWeek,
+            totalTimeSpent: timeThisWeek,
+            averageTimeSpent: averageTimeThisWeek // Include average time spent per workout
         },
         thisMonth: {
             workoutsCompleted: workoutsThisMonth.length,
@@ -410,6 +404,10 @@ const progressCharts = asyncHandler(async(req, res) => {
         }
     });
 });
+
+
+
+
 
 const getWorkoutStatus = asyncHandler(async(req, res) => {
     const userId = req.user._id;
