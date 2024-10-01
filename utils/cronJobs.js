@@ -44,3 +44,4 @@ cron.schedule('*/30 * * * *', async () => {
         console.error("Error sending reminders:", error);
     }
 });
+
