@@ -233,7 +233,7 @@ const workoutHistory = asyncHandler(async(req, res) => {
 
     const workouts = await Workout.find({
         userId,
-        exercisesCompleted: {$gte: 1}
+        exerciseLogged: true
     }).sort({ createdAt: 1 }).sort({ createdAt: 1 });
 
     if (workouts.length <= 0) {

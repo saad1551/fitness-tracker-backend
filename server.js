@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const errorHandler = require('./middleware/errorMiddleware');
 const userRouter = require('./routes/userRoute');
 const workoutRouter = require('./routes/workoutRoute');
+const cronJobs = require('./utils/cronJobs');
 
 const app = express();
 
@@ -39,6 +40,7 @@ mongoose
     ).then(() => {
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
+            cronJobs();
         });
     }).catch((err) => {
         console.log(err);
