@@ -360,15 +360,25 @@ const progressCharts = asyncHandler(async (req, res) => {
     let timeThisWeek = 0;
     let timeThisMonth = 0;
     let timeThisYear = 0;
-    
+
     const totalWorkoutsThisWeek = workoutsThisWeek.length; // To calculate average time
     const totalDurationThisWeek = []; // Store durations to calculate average
+
+    // Array to hold time spent for each day of the week
+    const dailyTimeSpent = Array(7).fill(0); // Initialize array for 7 days
 
     // Calculate time spent for this week
     for (const workout of workoutsThisWeek) {
         const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
         timeThisWeek += durationInHours;
         totalDurationThisWeek.push(durationInHours);
+        
+        // Determine which day of the week the workout was done (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+        const workoutDate = new Date(workout.date); // Ensure it's a Date object
+        const dayOfWeek = workoutDate.getDay();
+        
+        // Add the duration to the corresponding day
+        dailyTimeSpent[dayOfWeek] += durationInHours;
     }
     
     // Calculate time spent for this month
@@ -392,7 +402,8 @@ const progressCharts = asyncHandler(async (req, res) => {
         thisWeek: {
             workoutsCompleted: totalWorkoutsThisWeek,
             totalTimeSpent: timeThisWeek,
-            averageTimeSpent: averageTimeThisWeek // Include average time spent per workout
+            averageTimeSpent: averageTimeThisWeek, // Include average time spent per workout
+            dailyTimeSpent // Include daily time spent array
         },
         thisMonth: {
             workoutsCompleted: workoutsThisMonth.length,
@@ -404,6 +415,7 @@ const progressCharts = asyncHandler(async (req, res) => {
         }
     });
 });
+
 
 
 

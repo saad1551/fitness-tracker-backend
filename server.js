@@ -31,7 +31,7 @@ app.use("/api/workouts", workoutRouter);
 
 app.use(errorHandler);
 
-const PORT = 5000;
+const PORT = process.env.PORT;
 
 // connect to MongoDB and start server
 mongoose
