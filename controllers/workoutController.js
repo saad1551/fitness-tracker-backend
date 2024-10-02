@@ -325,6 +325,7 @@ const progressCharts = asyncHandler(async (req, res) => {
     endOfWeek.setHours(23, 59, 59, 999);
 
     const workoutsThisWeek = await Workout.find({
+        userId: req.user._id,
         date: {
             $gte: startOfWeek,
             $lte: endOfWeek
@@ -336,6 +337,7 @@ const progressCharts = asyncHandler(async (req, res) => {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the month
 
     const workoutsThisMonth = await Workout.find({
+        userId: req.user._id,
         date: {
             $gte: startOfMonth,
             $lte: endOfMonth
@@ -350,6 +352,7 @@ const progressCharts = asyncHandler(async (req, res) => {
     endOfYear.setHours(23, 59, 59, 999); // Set time to end of the day
 
     const workoutsThisYear = await Workout.find({
+        userId: req.user._id,
         date: {
             $gte: startOfYear,
             $lte: endOfYear
