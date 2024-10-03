@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const moment = require('moment'); // For easier date handling
 const User = require('../models/userModel'); // Adjust path as necessary
-const sendReminderEmail = require('../utils/sendEmail'); // Import the mailer
+const sendEmail = require('./sendEmail'); // Import the mailer
 const Notification = require('../models/notificationModel'); // Adjust path as necessary
 
 // Job to reset workout_done property at the start of each day
@@ -16,7 +16,7 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 // Job to send workout reminders every 30 minutes
-cron.schedule('*/30 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
     try {
         const currentTime = moment(); // Get current time
 
