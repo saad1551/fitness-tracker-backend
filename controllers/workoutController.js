@@ -19,6 +19,14 @@ function getTimeDifferenceInHours(startTime, endTime) {
     return diffInHours;
 };
 
+function convertToMinutes(timeStr) {
+    // Split the time string into minutes and seconds
+    const [minutes, seconds] = timeStr.split(':').map(Number);
+  
+    // Convert seconds to minutes and add to minutes
+    return minutes + seconds / 60;
+  };
+
 const startWorkout = asyncHandler(async(req, res) => {
     const { workout_name } = req.body;
 
@@ -368,6 +376,12 @@ const progressCharts = asyncHandler(async (req, res) => {
     const pieChartMonth = {};
     const pieChartYear = {};
 
+    const pieChartWeekTime = {};
+    const pieChartMonthTime = {};
+    const pieChartYearTime = {};
+
+
+
     const totalWorkoutsThisWeek = workoutsThisWeek.length; // To calculate average time
     const totalDurationThisWeek = []; // Store durations to calculate average
 
@@ -401,6 +415,22 @@ const progressCharts = asyncHandler(async (req, res) => {
                     pieChartWeek[exercise.name] = 1;
                 }
             }
+
+            const sets = await Set.find({ exerciseId: exercise._id });
+
+            for (const set of sets) {
+                if (Object.keys(pieChartWeekTime).includes(exercise.name)) {
+                    pieChartWeekTime[exercise.name] += convertToMinutes(set.timeTaken);
+                } else {
+                    if (Object.keys(pieChartWeekTime).includes('Others')) {
+                        pieChartWeekTime['Others'] += convertToMinutes(set.timeTaken);
+                    } else if (Object.keys(pieChartWeekTime).length >= 5) {
+                        pieChartWeekTime['Others'] = convertToMinutes(set.timeTaken);
+                    } else {
+                        pieChartWeekTime[exercise.name] = convertToMinutes(set.timeTaken);
+                    }
+                }
+            }
         }
     }
     
@@ -421,6 +451,22 @@ const progressCharts = asyncHandler(async (req, res) => {
                     pieChartMonth['Others'] = 1;
                 } else {
                     pieChartMonth[exercise.name] = 1;
+                }
+            }
+
+            const sets = await Set.find({ exerciseId: exercise._id });
+
+            for (const set of sets) {
+                if (Object.keys(pieChartMonthTime).includes(exercise.name)) {
+                    pieChartMonthTime[exercise.name] += convertToMinutes(set.timeTaken);
+                } else {
+                    if (Object.keys(pieChartMonthTime).includes('Others')) {
+                        pieChartMonthTime['Others'] += convertToMinutes(set.timeTaken);
+                    } else if (Object.keys(pieChartWeekTime).length >= 5) {
+                        pieChartMonthTime['Others'] = convertToMinutes(set.timeTaken);
+                    } else {
+                        pieChartMonthTime[exercise.name] = convertToMinutes(set.timeTaken);
+                    }
                 }
             }
         }
@@ -445,6 +491,22 @@ const progressCharts = asyncHandler(async (req, res) => {
                     pieChartYear[exercise.name] = 1;
                 }
             }
+
+            const sets = await Set.find({ exerciseId: exercise._id });
+
+            for (const set of sets) {
+                if (Object.keys(pieChartYearTime).includes(exercise.name)) {
+                    pieChartYearTime[exercise.name] += convertToMinutes(set.timeTaken);
+                } else {
+                    if (Object.keys(pieChartYearTime).includes('Others')) {
+                        pieChartYearTime['Others'] += convertToMinutes(set.timeTaken);
+                    } else if (Object.keys(pieChartYearTime).length >= 5) {
+                        pieChartYearTime['Others'] = convertToMinutes(set.timeTaken);
+                    } else {
+                        pieChartYearTime[exercise.name] = convertToMinutes(set.timeTaken);
+                    }
+                }
+            }
         }
     }
 
@@ -459,17 +521,20 @@ const progressCharts = asyncHandler(async (req, res) => {
             totalTimeSpent: timeThisWeek,
             averageTimeSpent: averageTimeThisWeek, // Include average time spent per workout
             dailyTimeSpent, // Include daily time spent array
-            pieChart: pieChartWeek
+            pieChart: pieChartWeek,
+            pieChartTime: pieChartWeekTime
         },
         thisMonth: {
             workoutsCompleted: workoutsThisMonth.length,
             timeSpent: timeThisMonth,
-            pieChart: pieChartMonth
+            pieChart: pieChartMonth,
+            pieChartTime: pieChartMonthTime
         },
         thisYear: {
             workoutsCompleted: workoutsThisYear.length,
             timeSpent: timeThisYear,
-            pieChart: pieChartYear
+            pieChart: pieChartYear,
+            pieChartTime: pieChartYearTime
         }
     });
 });
