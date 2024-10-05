@@ -364,6 +364,10 @@ const progressCharts = asyncHandler(async (req, res) => {
     let timeThisMonth = 0;
     let timeThisYear = 0;
 
+    const pieChartWeek = {};
+    const pieChartMonth = {};
+    const pieChartYear = {};
+
     const totalWorkoutsThisWeek = workoutsThisWeek.length; // To calculate average time
     const totalDurationThisWeek = []; // Store durations to calculate average
 
@@ -382,18 +386,66 @@ const progressCharts = asyncHandler(async (req, res) => {
         
         // Add the duration to the corresponding day
         dailyTimeSpent[dayOfWeek] += durationInHours;
+
+        const exercises = await Exercise.find({ workoutId: workout._id, setLogged: true });
+
+        for (const exercise of exercises) {
+            if (Object.keys(pieChartWeek).includes(exercise.name)) {
+                pieChartWeek[exercise.name] += 1
+            } else {
+                if (Object.keys(pieChartWeek).includes('Others')) {
+                    pieChartWeek['Others'] += 1;
+                } else if (Object.keys(pieChartWeek).length >= 5) {
+                    pieChartWeek['Others'] = 1;
+                } else {
+                    pieChartWeek[exercise.name] = 1;
+                }
+            }
+        }
     }
     
     // Calculate time spent for this month
     for (const workout of workoutsThisMonth) {
         const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
         timeThisMonth += durationInHours;
+
+        const exercises = await Exercise.find({ workoutId: workout._id, setLogged: true });
+
+        for (const exercise of exercises) {
+            if (Object.keys(pieChartMonth).includes(exercise.name)) {
+                pieChartMonth[exercise.name] += 1
+            } else {
+                if (Object.keys(pieChartMonth).includes('Others')) {
+                    pieChartMonth['Others'] += 1;
+                } else if (Object.keys(pieChartMonth).length >= 5) {
+                    pieChartMonth['Others'] = 1;
+                } else {
+                    pieChartMonth[exercise.name] = 1;
+                }
+            }
+        }
     }
     
     // Calculate time spent for this year
     for (const workout of workoutsThisYear) {
         const durationInHours = workout.duration / (1000 * 60 * 60); // Convert milliseconds to hours
         timeThisYear += durationInHours;
+
+        const exercises = await Exercise.find({ workoutId: workout._id, setLogged: true });
+
+        for (const exercise of exercises) {
+            if (Object.keys(pieChartYear).includes(exercise.name)) {
+                pieChartYear[exercise.name] += 1
+            } else {
+                if (Object.keys(pieChartYear).includes('Others')) {
+                    pieChartYear['Others'] += 1;
+                } else if (Object.keys(pieChartYear).length >= 5) {
+                    pieChartYear['Others'] = 1;
+                } else {
+                    pieChartYear[exercise.name] = 1;
+                }
+            }
+        }
     }
 
     // Calculate average time spent per workout for this week
@@ -406,15 +458,18 @@ const progressCharts = asyncHandler(async (req, res) => {
             workoutsCompleted: totalWorkoutsThisWeek,
             totalTimeSpent: timeThisWeek,
             averageTimeSpent: averageTimeThisWeek, // Include average time spent per workout
-            dailyTimeSpent // Include daily time spent array
+            dailyTimeSpent, // Include daily time spent array
+            pieChart: pieChartWeek
         },
         thisMonth: {
             workoutsCompleted: workoutsThisMonth.length,
-            timeSpent: timeThisMonth
+            timeSpent: timeThisMonth,
+            pieChart: pieChartMonth
         },
         thisYear: {
             workoutsCompleted: workoutsThisYear.length,
-            timeSpent: timeThisYear
+            timeSpent: timeThisYear,
+            pieChart: pieChartYear
         }
     });
 });
