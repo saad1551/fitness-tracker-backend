@@ -287,7 +287,8 @@ const getExercises = asyncHandler(async(req, res) => {
     }
 
     const exercises = await Exercise.find({
-        workoutId
+        workoutId,
+        setLogged: true
     });
 
     if (exercises.length <= 0) {
