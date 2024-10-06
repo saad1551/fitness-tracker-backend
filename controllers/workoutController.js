@@ -171,7 +171,7 @@ const startExercise = asyncHandler(async(req, res) => {
     res.status(201).json({
         message: "Successfully started exercise",
         exercise: {
-            id: exercise._id,
+            _id: exercise._id,
             workoutId: exercise.workoutId,
             name: exercise.name,
             image: exercise.image
@@ -259,7 +259,8 @@ const workoutHistory = asyncHandler(async(req, res) => {
 
         // Fetch the exercises related to this workout
         const exercises = await Exercise.find({
-            workoutId: workoutId
+            workoutId: workoutId,
+            setLogged: true
         }).sort({ createdAt: 1 });
 
         // Convert the workout document to a plain JavaScript object
@@ -274,7 +275,6 @@ const workoutHistory = asyncHandler(async(req, res) => {
 
     res.send(modifiedWorkouts);
 });
-
 
 const getExercises = asyncHandler(async(req, res) => {
     const { workoutId } = req.params;
